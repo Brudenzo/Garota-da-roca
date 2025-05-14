@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garota da Roça - Calculadora de Margem</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #2e7d32;
+            text-align: center;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 5px;
+            display: none;
+        }
+        .toggle {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .hidden-costs {
+            background-color: #fff8e1;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌽 Garota da Roça</h1>
+        <h2>Calculadora de Margem</h2>
+        
+        <div class="toggle">
+            <input type="checkbox" id="showCosts">
+            <label for="showCosts" style="margin-left: 10px;">Mostrar custos detalhados</label>
+        </div>
+        
+        <div class="hidden-costs" id="costDetails" style="display: none;">
+            <h3>Custos Unitários</h3>
+            <p>Matéria Prima: R$ <span id="rawMaterial">1.00</span></p>
+            <p>Embalagem BDJ: R$ <span id="packaging">0.12</span></p>
+            <p>Caixa Papelão: R$ <span id="box">0.50</span></p>
+        </div>
+        
+        <div class="form-group">
+            <label for="productType">Tipo de Produto:</label>
+            <select id="productType">
+                <option value="bdj">Milho BDJ (Embalado)</option>
+                <option value="inNature">Milho in Natura (Espiga)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="quantity">Quantidade:</label>
+            <input type="number" id="quantity" min="1" value="1">
+        </div>
+        
+        <div class="form-group">
+            <label for="salePrice">Preço de Venda (unitário):</label>
+            <input type="number" id="salePrice" min="0" step="0.01" value="3.50">
+        </div>
+        
+        <div class="form-group">
+            <label for="logisticType">Custo Logístico:</label>
+            <select id="logisticType">
+                <option value="percentage">Porcentagem (8%)</option>
+                <option value="fixed">Valor Fixo</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="logisticValueContainer" style="display: none;">
+            <label for="logisticValue">Valor do Custo Logístico:</label>
+            <input type="number" id="logisticValue" min="0" step="0.01">
+        </div>
+        
+        <button onclick="calculate()">Calcular Margem</button>
+        
+        <div class="result" id="result">
+            <h3>Resultado</h3>
+            <p>Custo Total Unitário: R$ <span id="totalCost"></span></p>
+            <p>Margem por Unidade: R$ <span id="unitMargin"></span> (<span id="unitMarginPercent"></span>)</p>
+            <p>Total Venda: R$ <span id="totalSale"></span></p>
+            <p>Lucro Total: R$ <span id="totalProfit"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Mostrar/ocultar custos detalhados
+        document.getElementById('showCosts').addEventListener('change', function() {
+            const costDetails = document.getElementById('costDetails');
+            costDetails.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        // Mostrar campo de valor fixo quando selecionado
+        document.getElementById('logisticType').addEventListener('change', function() {
+            const container = document.getElementById('logisticValueContainer');
+            container.style.display = this.value === 'fixed' ? 'block' : 'none';
+        });
+        
+        function calculate() {
+            // Obter valores dos inputs
+            const productType = document.getElementById('productType').value;
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const salePrice = parseFloat(document.getElementById('salePrice').value);
+            const logisticType = document.getElementById('logisticType').value;
+            
+            // Definir custos base
+            let rawMaterial, packaging, box;
+            
+            if (productType === 'bdj') {
+                rawMaterial = 1.00;
+                packaging = 0.12;
+                box = 0.50;
+            } else { // in natura
+                rawMaterial = 0.70;
+                packaging = 0;
+                box = 0.30;
+            }
+            
+            // Calcular custo logístico
+            let logisticCost;
+            if (logisticType === 'percentage') {
+                const subtotal = rawMaterial + packaging + box;
+                logisticCost = subtotal * 0.08;
+            } else {
+                logisticCost = parseFloat(document.getElementById('logisticValue').value) || 0;
+            }
+            
+            // Calcular custo total
+            const unitCost = rawMaterial + packaging + box + logisticCost;
+            const totalCost = unitCost * quantity;
+            
+            // Calcular margens
+            const unitMargin = salePrice - unitCost;
+            const unitMarginPercent = (unitMargin / salePrice * 100).toFixed(1);
+            const totalSale = salePrice * quantity;
+            const totalProfit = unitMargin * quantity;
+            
+            // Exibir resultados
+            document.getElementById('totalCost').textContent = unitCost.toFixed(2);
+            document.getElementById('unitMargin').textContent = unitMargin.toFixed(2);
+            document.getElementById('unitMarginPercent').textContent = unitMarginPercent + '%';
+            document.getElementById('totalSale').textContent = totalSale.toFixed(2);
+            document.getElementById('totalProfit').textContent = totalProfit.toFixed(2);
+            
+            document.getElementById('result').style.display = 'block';
+            
+            // Atualizar valores exibidos (se mostrando custos)
+            if (document.getElementById('showCosts').checked) {
+                document.getElementById('rawMaterial').textContent = rawMaterial.toFixed(2);
+                document.getElementById('packaging').textContent = packaging.toFixed(2);
+                document.getElementById('box').textContent = box.toFixed(2);
+            }
+        }
+    </script>
+</body>
+</html>
